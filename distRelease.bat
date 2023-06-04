@@ -1,1 +1,1 @@
-copy /Y build\Release\*.* ..\electron-react-boilerplate\build\Release
+copy /Y build\Release\*.* ..\CM\electron-react-boilerplate\build\Release

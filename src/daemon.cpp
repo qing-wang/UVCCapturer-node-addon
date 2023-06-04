@@ -1,3 +1,5 @@
+#include <stdio.h>
+#include <iostream>
 #include <thread>
 #include <queue>
 #include <napi.h>
@@ -38,22 +40,24 @@ Napi::Value CreateCallbackDaemon(const Napi::CallbackInfo& info)
 
 void callbackDaemonThreadEntry(TsfnContext* context)
 {
-#if 0
-    auto callback = [](Napi::Env env, Napi::Function jsCallback, ObjectUpdateQueueItem* item) {
+    auto callback = [](Napi::Env env, Napi::Function jsCallback, FrameUpdateQueueItem* item) {
+        Napi::ArrayBuffer frame = Napi::ArrayBuffer::New(env, item->width * item->height * 4);
+        memcpy(frame.Data(), item->argb, item->width * item->height * 4);
         //
         Napi::Object obj = Napi::Object::New(env);
-        //BuildMCObjectForJSAndDispose(env, obj, item);
+        obj.Set("width", item->width);
+        obj.Set("height", item->height);
+        obj.Set("frame", frame);
         //
         jsCallback.Call({ obj });
         //
+        UVCCapturer_DeleteObject(item->argb);
         delete item;
     };
-#endif
     //
     while (true)
     {
-#if 0
-        ObjectUpdateQueueItem* item = MCSDK::PopObjectUpdateQueueItem();
+        FrameUpdateQueueItem* item = UVCCapturer::PopFrameUpdateQueueItem();
         if (item != NULL)
         {
             napi_status status = context->tsfn.BlockingCall(item, callback);
@@ -64,14 +68,11 @@ void callbackDaemonThreadEntry(TsfnContext* context)
                     "ThreadEntry",
                     "Napi::ThreadSafeNapi::Function.BlockingCall() failed");
             }
-            // item->object is freed by the callback function
-            //delete item;
         }
         else
         {
-            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
-#endif
     }
     context->tsfn.Release();
 }
